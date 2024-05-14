@@ -2,8 +2,8 @@
 /* eslint-disable prettier/prettier */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { redirect, useNavigate, useParams } from 'react-router-dom'
 import productApi from 'src/apis/product.api'
 import ProductRating from 'src/components/ProductRating'
 import { Product as ProductType, ProductListConfig } from 'src/types/product.type'
@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import path from 'src/constants/path'
 import { Helmet } from 'react-helmet-async'
 import { convert } from 'html-to-text'
+import { AppContext } from 'src/contexts/app.context'
+import { URL_LOGIN } from 'src/apis/auth.api'
 DOMPurify
 export default function ProductDetail() {
   const { t } = useTranslation(['product'])
@@ -102,19 +104,27 @@ export default function ProductDetail() {
     setBuyCount(value)
   }
 
-  const addToCart = () => {
-    addToCartMutation.mutate(
-      { buy_count: buyCount, product_id: product?._id as string },
-      {
-        onSuccess: (data) => {
-          toast.success(data.data.message, { autoClose: 1000 })
-          queryClient.invalidateQueries({ queryKey: ['purchases', { status: purchasesStatus.inCart }] })
-        }
-      }
-    )
-  }
+  // check login
+  const { isAuthenticated } = useContext(AppContext)
+
   // buy now
   const navigate = useNavigate()
+
+  const addToCart = () => {
+    if (isAuthenticated) {
+      addToCartMutation.mutate(
+        { buy_count: buyCount, product_id: product?._id as string },
+        {
+          onSuccess: (data) => {
+            toast.success(data.data.message, { autoClose: 1000 })
+            queryClient.invalidateQueries({ queryKey: ['purchases', { status: purchasesStatus.inCart }] })
+          }
+        }
+      )
+    } else {
+      navigate(path.login)
+    }
+  }
 
   const buyNow = async () => {
     const res = await addToCartMutation.mutateAsync({ buy_count: buyCount, product_id: product?._id as string })
