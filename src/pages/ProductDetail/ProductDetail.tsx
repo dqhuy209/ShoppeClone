@@ -126,13 +126,17 @@ export default function ProductDetail() {
   }
 
   const buyNow = async () => {
-    const res = await addToCartMutation.mutateAsync({ buy_count: buyCount, product_id: product?._id as string })
-    const purchase = res.data.data
-    navigate(path.cart, {
-      state: {
-        purchaseId: purchase._id
-      }
-    })
+    if (isAuthenticated) {
+      const res = await addToCartMutation.mutateAsync({ buy_count: buyCount, product_id: product?._id as string })
+      const purchase = res.data.data
+      navigate(path.cart, {
+        state: {
+          purchaseId: purchase._id
+        }
+      })
+    } else {
+      navigate(path.login)
+    }
   }
   if (!product) return null
   return (
